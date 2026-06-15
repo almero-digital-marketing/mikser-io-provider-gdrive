@@ -129,6 +129,10 @@ export default {
                     folderId:   '0Bz4_FwGz_w7VTGFqMVBNUmZqSHM',
                     collection: 'documents',                    // catalog collection to emit into
                     prefix:     '/drive/team-notes/',           // mikser-side id prefix
+                    // Optional: only sync matching files (and never the
+                    // operator noise — see "Filtering" below).
+                    // include: ['**/*.gdoc', '**/*.md', '**/*.pdf'],
+                    // exclude: ['_archive/**', '_drafts/**'],
                 },
                 {
                     folderId:   'abc123xyz',
@@ -177,6 +181,38 @@ gdrive: polled folder 0Bz4_FwGz_w7VTGFqMVBNUmZqSHM — 2 changes processed
 **Incremental polling (every `pollIntervalMs` in watch mode):** `drive.changes.list` from the last persisted page token. New/edited files become `updateEntity` calls; trashed/removed files become `deleteEntity`. The new page token gets persisted before each batch finishes so a crash mid-iteration doesn't lose progress.
 
 **Cache for binaries:** Slides, PDFs, images, video — anything that isn't text — is mirrored to `runtime/gdrive-cache/<fileId>.<ext>` the first time something reads it. Re-reads hit the local file and skip the Drive round-trip if Drive's `modifiedTime` matches the cached file's `mtime`. After a Drive edit, the cache invalidates and the next read re-downloads.
+
+## Filtering (`include` / `exclude`)
+
+Drive folders accumulate noise — `.DS_Store`, Office lockfiles, screenshots dropped during a meeting, an `_archive/` subfolder nobody cleans up. Per-folder `include` and `exclude` globs decide what reaches the catalog:
+
+```js
+folders: [
+    {
+        folderId:   '0Bz...',
+        collection: 'documents',
+        prefix:     '/drive/team-notes/',
+        include:    ['**/*.gdoc', '**/*.md', '**/*.pdf'],
+        exclude:    ['_archive/**', '_drafts/**', 'screenshots/**'],
+    },
+],
+```
+
+Patterns are matched against the **Drive-side relative path** from the configured root — `welcome.gdoc`, `subfolder/notes.md`, `_archive/2024/q3-review.gdoc`. Standard [minimatch](https://www.npmjs.com/package/minimatch) syntax (`**`, `*`, `?`, character classes, brace expansion). `dot: true` is set so dot-prefixed files and folders are matched the same as the rest.
+
+Rules:
+
+- **`exclude` always wins over `include`.** A file matching both is dropped.
+- **No `include` means "everything"** (still subject to excludes).
+- **Default excludes** stack on top of your custom ones — operator noise is always filtered without ceremony:
+  ```
+  .DS_Store    .~lock.*    ~$*    Thumbs.db    desktop.ini
+  ```
+  You can't override these via `include`; if you genuinely want a `.DS_Store` in your catalog, file an issue.
+
+Filtering applies to both cold scan and incremental polling. A file that moves *into* an excluded path (renamed into `_archive/`) gets a DELETE on the next poll, mirroring catalog semantics for a real delete. A file that moves *out of* an excluded path (rescued from `_archive/`) gets a CREATE.
+
+For change events on entities the plugin has never seen — and where Drive doesn't include the parents list in the event payload — the plugin walks parents up to the root once to compute the relative path. Cached after first seen; cheap thereafter.
 
 ## URI scheme
 
