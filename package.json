@@ -23,5 +23,8 @@
   "dependencies": {
     "googleapis": "^144.0.0",
     "minimatch": "^10.0.0"
+  },
+  "devDependencies": {
+    "mikser-io": "file:../mikser-io"
   }
 }
