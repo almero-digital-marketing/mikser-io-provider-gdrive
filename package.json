@@ -1,6 +1,6 @@
 {
   "name": "mikser-io-provider-gdrive",
-  "version": "2.0.0",
+  "version": "11.0.1",
   "description": "Google Drive as a content source for mikser-io. Lifecycle plugin syncs Drive folders into the catalog as entities; `read(entity)` named export plugs into the engine's scheme-dispatched readEntityContent so Docs / Sheets / Slides / plain text / binaries all just work downstream.",
   "main": "index.js",
   "type": "module",
@@ -18,13 +18,13 @@
   },
   "homepage": "https://github.com/almero-digital-marketing/mikser-io-provider-gdrive#readme",
   "peerDependencies": {
-    "mikser-io": "^10.0.0"
+    "mikser-io": "^11.0.1"
   },
   "dependencies": {
     "googleapis": "^144.0.0",
     "minimatch": "^10.0.0"
   },
   "devDependencies": {
-    "mikser-io": "^10.0.0"
+    "mikser-io": "^11.0.1"
   }
 }
